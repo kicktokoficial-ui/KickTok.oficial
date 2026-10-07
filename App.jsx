@@ -1,168 +1,187 @@
-import React, { useState } from 'react';
-import { 
-  Heart, MessageCircle, Share2, Music, Video, Zap, Gift, 
-  User, Home, Compass, PlusSquare, Sparkles, Send, Flame 
+import React, { useState, useRef } from 'react';
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Music,
+  User,
+  Compass,
+  PlusSquare,
+  Sparkles,
+  Send,
+  LogOut,
+  Lock,
+  Mail,
+  UserCheck
 } from 'lucide-react';
 
+const MOCK_CLIPS = [
+  {
+    id: 1,
+    streamer: '@streamer_oficial',
+    title: '¡Bienvenidos al directo! Rompiéndola en KickTok ⚡',
+    likesCount: 1240,
+    comments: [
+      { id: 1, user: 'Alex_Gamer', text: '¡Increíble jugada!' },
+      { id: 2, user: 'Maria_Dev', text: 'Sube más clips así 🚀' }
+    ]
+  },
+  {
+    id: 2,
+    streamer: '@pro_gamer_99',
+    title: 'Racha de victorias en la última partida 🔥',
+    likesCount: 3580,
+    comments: [
+      { id: 1, user: 'CarlosK', text: 'Brutal ese movimiento' },
+      { id: 2, user: 'Lucia_Vlc', text: 'Enséñame a jugar así porfa' }
+    ]
+  },
+  {
+    id: 3,
+    streamer: '@kick_latam',
+    title: 'Momentos divertidos del stream de ayer 🎮😂',
+    likesCount: 8920,
+    comments: [
+      { id: 1, user: 'Javier98', text: 'Me morí de risa con esta parte' }
+    ]
+  }
+];
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('feed');
-  const [likeCount, setLikeCount] = useState(12400);
+  // Estado de autenticación
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' o 'register'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+
+  // Estados principales de la app
+  const [activeTab, setActiveTab] = useState('clips');
+  const [currentClipIndex, setCurrentClipIndex] = useState(0);
+  const [clips, setClips] = useState(MOCK_CLIPS);
   const [isLiked, setIsLiked] = useState(false);
-  const [chatMessages, setChatMessages] = useState([
-    { id: 1, user: 'Alex_Gamer', text: '¡Increíble jugada! 🔥', color: '#53fc18' },
-    { id: 2, user: 'Maria_Dev', text: 'Sube más contenido así 🚀', color: '#38bdf8' }
-  ]);
   const [newMessage, setNewMessage] = useState('');
+
+  // Referencias para gestos táctiles (Swipe Up/Down)
+  const touchStartY = useRef(0);
+  const touchEndY = useRef(0);
+
+  const currentClip = clips[currentClipIndex];
+
+  const handleAuthSubmit = (e) => {
+    e.preventDefault();
+    if (authMode === 'register' && !username.trim()) {
+      alert('Por favor ingresa un nombre de usuario');
+      return;
+    }
+    if (!email.trim() || !password.trim()) {
+      alert('Por favor completa todos los campos');
+      return;
+    }
+    // Simulamos éxito de sesión / registro
+    setIsLoggedIn(true);
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartY.current || !touchEndY.current) return;
+    const distance = touchStartY.current - touchEndY.current;
+    const minSwipeDistance = 50;
+
+    if (distance > minSwipeDistance) {
+      if (currentClipIndex < clips.length - 1) {
+        setCurrentClipIndex(prev => prev + 1);
+        setIsLiked(false);
+      }
+    } else if (distance < -minSwipeDistance) {
+      if (currentClipIndex > 0) {
+        setCurrentClipIndex(prev => prev - 1);
+        setIsLiked(false);
+      }
+    }
+    touchStartY.current = 0;
+    touchEndY.current = 0;
+  };
 
   const toggleLike = () => {
     setIsLiked(!isLiked);
-    setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+    setClips(prevClips => {
+      const updated = [...prevClips];
+      updated[currentClipIndex].likesCount += isLiked ? -1 : 1;
+      return updated;
+    });
   };
 
   const sendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    setChatMessages([...chatMessages, {
-      id: Date.now(),
-      user: 'Tú',
-      text: newMessage,
-      color: '#53fc18'
-    }]);
+
+    setClips(prevClips => {
+      const updated = [...prevClips];
+      updated[currentClipIndex].comments.push({
+        id: Date.now(),
+        user: username || 'TÚ',
+        text: newMessage
+      });
+      return updated;
+    });
     setNewMessage('');
   };
 
-  return (
-    <div className="flex flex-col h-screen bg-black text-white font-sans overflow-hidden">
-      {/* Header Superior estilo Kick */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur z-20">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-[#53fc18] rounded-lg flex items-center justify-center font-extrabold text-black text-xl">
-            K
-          </div>
-          <span className="font-bold text-xl tracking-wider text-[#53fc18]">KickTok</span>
-        </div>
-        <div className="flex items-center space-x-3">
-          <button className="flex items-center space-x-1 bg-[#53fc18] text-black px-3 py-1.5 rounded-full text-xs font-extrabold hover:bg-green-400 transition">
-            <Zap className="w-4 h-4 fill-black" />
-            <span>EN VIVO</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Contenido Principal */}
-      <main className="flex-1 relative bg-zinc-900 overflow-hidden">
-        {activeTab === 'feed' && (
-          <div className="relative h-full w-full flex flex-col justify-end p-4 bg-gradient-to-t from-black/90 via-black/30 to-transparent">
-            {/* Fondo simulado del video/stream */}
-            <div className="absolute inset-0 bg-zinc-800 flex items-center justify-center -z-10">
-              <div className="text-center text-zinc-500">
-                <Video className="w-16 h-16 mx-auto mb-2 opacity-40 animate-pulse text-[#53fc18]" />
-                <p className="text-sm">Reproduciendo Stream de KickTok</p>
-              </div>
+  // 1. PANTALLA DE INICIO DE SESIÓN / CREAR CUENTA
+  if (!isLoggedIn) {
+    return (
+      <div className="flex flex-col h-screen bg-black text-white font-sans justify-center px-6 select-none">
+        <div className="max-w-sm w-full mx-auto space-y-6">
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 rounded-2xl bg-[#00FF66] flex items-center justify-center font-black text-black text-3xl mx-auto shadow-[0_0_20px_#00FF66]">
+              K
             </div>
-
-            {/* Panel de Interacciones Laterales */}
-            <div className="absolute right-3 bottom-20 flex flex-col items-center space-y-5 z-10">
-              <button onClick={toggleLike} className="flex flex-col items-center group">
-                <div className={`p-3 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-700/50 ${isLiked ? 'text-red-500' : 'text-white'}`}>
-                  <Heart className={`w-7 h-7 ${isLiked ? 'fill-red-500' : ''}`} />
-                </div>
-                <span className="text-xs font-bold mt-1">{likeCount.toLocaleString()}</span>
-              </button>
-
-              <button className="flex flex-col items-center">
-                <div className="p-3 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-700/50">
-                  <MessageCircle className="w-7 h-7 text-white" />
-                </div>
-                <span className="text-xs font-bold mt-1">842</span>
-              </button>
-
-              <button className="flex flex-col items-center">
-                <div className="p-3 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-700/50">
-                  <Gift className="w-7 h-7 text-[#53fc18]" />
-                </div>
-                <span className="text-xs font-bold mt-1 text-[#53fc18]">Regalar</span>
-              </button>
-
-              <button className="flex flex-col items-center">
-                <div className="p-3 rounded-full bg-zinc-900/80 backdrop-blur border border-zinc-700/50">
-                  <Share2 className="w-7 h-7 text-white" />
-                </div>
-                <span className="text-xs font-bold mt-1">Compartir</span>
-              </button>
-            </div>
-
-            {/* Información del Creador y Chat en Vivo */}
-            <div className="max-w-[80%] space-y-3 z-10">
-              <div className="flex items-center space-x-2">
-                <div className="w-10 h-10 rounded-full border-2 border-[#53fc18] bg-zinc-700 flex items-center justify-center font-bold">
-                  KT
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm flex items-center gap-1">
-                    @streamer_oficial
-                    <span className="bg-[#53fc18] text-black text-[10px] px-1.5 py-0.2 rounded font-extrabold">PRO</span>
-                  </h3>
-                  <p className="text-xs text-zinc-300">¡Bienvenidos al directo especial! 🚀</p>
-                </div>
-              </div>
-
-              {/* Chat Flotante */}
-              <div className="h-28 overflow-y-auto space-y-1 text-xs bg-black/40 backdrop-blur-md p-2 rounded-xl border border-white/10">
-                {chatMessages.map((msg) => (
-                  <p key={msg.id} className="truncate">
-                    <span className="font-bold" style={{ color: msg.color }}>{msg.user}: </span>
-                    <span className="text-zinc-200">{msg.text}</span>
-                  </p>
-                ))}
-              </div>
-
-              {/* Input de Chat rápido */}
-              <form onSubmit={sendMessage} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Enviar mensaje..."
-                  className="flex-1 bg-zinc-900/90 border border-zinc-700 rounded-full px-3 py-1.5 text-xs focus:outline-none focus:border-[#53fc18]"
-                />
-                <button type="submit" className="p-1.5 bg-[#53fc18] text-black rounded-full font-bold">
-                  <Send className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            </div>
+            <h1 className="text-2xl font-black tracking-wider text-[#00FF66]">KickTok</h1>
+            <p className="text-xs text-zinc-400">La comunidad de streaming y clips en vivo</p>
           </div>
-        )}
-      </main>
 
-      {/* Menú de Navegación Inferior */}
-      <nav className="flex items-center justify-around py-3 bg-zinc-950 border-t border-zinc-800 z-20">
-        <button onClick={() => setActiveTab('feed')} className={`flex flex-col items-center ${activeTab === 'feed' ? 'text-[#53fc18]' : 'text-zinc-400'}`}>
-          <Home className="w-6 h-6" />
-          <span className="text-[10px] mt-1 font-medium">Inicio</span>
-        </button>
-
-        <button onClick={() => setActiveTab('explore')} className={`flex flex-col items-center ${activeTab === 'explore' ? 'text-[#53fc18]' : 'text-zinc-400'}`}>
-          <Compass className="w-6 h-6" />
-          <span className="text-[10px] mt-1 font-medium">Explorar</span>
-        </button>
-
-        <button className="flex flex-col items-center text-black">
-          <div className="bg-[#53fc18] p-2 rounded-xl shadow-lg shadow-[#53fc18]/20 active:scale-95 transition">
-            <PlusSquare className="w-6 h-6" />
+          {/* Selector de modo */}
+          <div className="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+            <button
+              type="button"
+              onClick={() => setAuthMode('login')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                authMode === 'login' ? 'bg-[#00FF66] text-black shadow-[0_0_10px_#00FF66]' : 'text-zinc-400'
+              }`}
+            >
+              Iniciar Sesión
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthMode('register')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                authMode === 'register' ? 'bg-[#00FF66] text-black shadow-[0_0_10px_#00FF66]' : 'text-zinc-400'
+              }`}
+            >
+              Crear Cuenta
+            </button>
           </div>
-        </button>
 
-        <button onClick={() => setActiveTab('live')} className={`flex flex-col items-center ${activeTab === 'live' ? 'text-[#53fc18]' : 'text-zinc-400'}`}>
-          <Flame className="w-6 h-6" />
-          <span className="text-[10px] mt-1 font-medium">Directos</span>
-        </button>
-
-        <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center ${activeTab === 'profile' ? 'text-[#53fc18]' : 'text-zinc-400'}`}>
-          <User className="w-6 h-6" />
-          <span className="text-[10px] mt-1 font-medium">Perfil</span>
-        </button>
-      </nav>
-    </div>
-  );
-}
+          <form onSubmit={handleAuthSubmit} className="space-y-4">
+            {authMode === 'register' && (
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-400 font-medium">Nombre de usuario</label>
+                <div className="relative flex items-center">
+                  <UserCheck className="absolute left-3 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="TuTagDeStreamer"
+                    className="w-full bg-zinc-900 border border-zinc-800 text-white text-xs pl-9 pr-3 py-3 rounded-xl focus:outline-none focus:border-[#00FF66]"
+                  />
+                </div>
+              </di
